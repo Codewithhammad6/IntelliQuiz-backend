@@ -63,6 +63,7 @@ export const addProduct = catchAsyncError(async (req, res, next) => {
     size,
     trendingDeal,
     todayDeal,
+    rating,
     category
   } = req.body;
 
@@ -94,6 +95,7 @@ export const addProduct = catchAsyncError(async (req, res, next) => {
     size: size || "",
     trendingDeal: trendingDeal || "no",
     todayDeal: todayDeal || "no",
+    rating:rating,
     category,
     imagePublicIds
   });

@@ -56,6 +56,9 @@ const productSchema = new mongoose.Schema({
     enum: ["yes", "no"],
     default: "no",
   },
+  rating:{
+    type: String,
+  },
    createdAt: {
     type: Date,
     default: Date.now,
