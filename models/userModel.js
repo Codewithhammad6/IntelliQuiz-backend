@@ -10,7 +10,6 @@ const userSchema = new mongoose.Schema({
  email: {
     type: String,
     required: [true, 'Email is required'],
-    unique: true,
     validate: {
       validator: function(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

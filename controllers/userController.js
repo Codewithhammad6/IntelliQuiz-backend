@@ -12,40 +12,88 @@ import mongoose from "mongoose";
 
 // REGISTER
 export const register = catchAsyncError(async (req, res, next) => {
-  const { name, email, password } = req.body;
+  // const { name, email, password } = req.body;
 
-  if (!name || !email || !password) {
-    return next(new ErrorHandler("All fields required", 400));
-  }
+  // if (!name || !email || !password) {
+  //   return next(new ErrorHandler("All fields required", 400));
+  // }
 
-  // Email format check
-  const emailRegex = /^\S+@\S+\.\S+$/;
-  if (!emailRegex.test(email)) {
-    return next(new ErrorHandler("Invalid email format", 400));
-  }
+  // // Email format check
+  // const emailRegex = /^\S+@\S+\.\S+$/;
+  // if (!emailRegex.test(email)) {
+  //   return next(new ErrorHandler("Invalid email format", 400));
+  // }
 
-  const existingUser = await User.findOne({ email, verified: true });
+  // const existingUser = await User.findOne({ email, verified: true });
 
-  if (existingUser) {
-    return next(new ErrorHandler("Email is already used.", 400));
-  }
+  // if (existingUser) {
+  //   return next(new ErrorHandler("Email is already used.", 400));
+  // }
 
-  const newUser = new User({ name, email, password });
+  // const newUser = new User({ name, email, password });
 
-  // generate and store token
-  const verificationToken = newUser.generateCode();
-  newUser.verificationToken = verificationToken;
+  // // generate and store token
+  // const verificationToken = newUser.generateCode();
+  // newUser.verificationToken = verificationToken;
 
-  await newUser.save();
+  // await newUser.save();
 
-  // send verification email
-  await sendVerificationEmail(newUser.email, verificationToken);
+  // // send verification email
+  // await sendVerificationEmail(newUser.email, verificationToken);
 
-  res.status(201).json({
+  // res.status(201).json({
+  //   success: true,
+  //   message:
+  //     "User registered successfully. Please check your email for verification.",
+  // });
+// inside register controller
+
+
+const { name, email, password } = req.body;
+
+if (!name || !email || !password) {
+  return next(new ErrorHandler("All fields required", 400));
+}
+
+const emailRegex = /^\S+@\S+\.\S+$/;
+if (!emailRegex.test(email)) {
+  return next(new ErrorHandler("Invalid email format", 400));
+}
+
+// 1️⃣ Check if email exists at all
+let existingUser = await User.findOne({ email });
+
+// 2️⃣ If already verified, block
+if (existingUser && existingUser.verified) {
+  return next(new ErrorHandler("Email is already used.", 400));
+}
+
+// 3️⃣ If exists but not verified → just update token + password and resend
+if (existingUser && !existingUser.verified) {
+  existingUser.name = name;
+  existingUser.password = password; // will be hashed by pre-save
+  const verificationToken = existingUser.generateCode();
+  await existingUser.save();
+
+  await sendVerificationEmail(existingUser.email, verificationToken);
+
+  return res.status(200).json({
     success: true,
-    message:
-      "User registered successfully. Please check your email for verification.",
+    message: "Verification code resent to your email.",
   });
+}
+
+// 4️⃣ Otherwise, create new user
+const newUser = new User({ name, email, password });
+const verificationToken = newUser.generateCode();
+await newUser.save();
+await sendVerificationEmail(newUser.email, verificationToken);
+
+res.status(201).json({
+  success: true,
+  message:
+    "User registered successfully. Please check your email for verification.",
+});
 
 });
 
@@ -66,37 +114,42 @@ const mailOptions = {
   to: email,
   subject: "✨ Verify your email address",
  html: `
-       <div style="font-family: Arial, sans-serif; background-color:#f4f4f4; padding:30px;">
-        <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); padding:20px;">
-          
-          <div style="text-align:center; margin-bottom:20px;">
-            <h1 style="color:#4CAF50; margin:0;">HL</h1>
-            <p style="color:#555; font-size:16px; margin-top:5px;">Secure Email Verification</p>
-          </div>
+     <div style="font-family: Arial, sans-serif; background-color:#f4f4f4; padding:30px;">
+  <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:25px;">
+    
+    <!-- Header -->
+    <div style="text-align:center; margin-bottom:25px;">
+      <h1 style="color:#4199c7; margin:0; font-size:32px; font-weight:700;">HL</h1>
+      <p style="color:#555; font-size:16px; margin-top:6px; font-weight:500;">Secure Email Verification</p>
+    </div>
 
-          <p style="font-size:16px; color:#333;">Hello,</p>
-          <p style="font-size:15px; color:#555; line-height:1.6;">
-            We received a request to verify your email address. Please use the following
-            <strong style="color:#4CAF50;">verification code</strong>:
-          </p>
+    <!-- Greeting -->
+    <p style="font-size:16px; color:#333; margin-bottom:10px;">Hello,</p>
+    <p style="font-size:15px; color:#555; line-height:1.7; margin-top:0;">
+      We received a request to verify your email address. Please use the following
+      <strong style="color:#4199c7;">verification code</strong>:
+    </p>
 
-          <div style="text-align:center; margin:30px 0;">
-            <span style="display:inline-block; background:#4CAF50; color:#fff; font-size:24px; font-weight:bold; letter-spacing:3px; padding:15px 25px; border-radius:8px;">
-              ${verificationToken}
-            </span>
-          </div>
+    <!-- Verification Code -->
+    <div style="text-align:center; margin:35px 0;">
+      <span style="display:inline-block; background:#4199c7; color:#ffffff; font-size:24px; font-weight:bold; letter-spacing:3px; padding:15px 35px; border-radius:8px;">
+        ${verificationToken}
+      </span>
+    </div>
 
-          <p style="font-size:14px; color:#777; line-height:1.5;">
-            If you didn’t request this, you can safely ignore this email.
-          </p>
+    <!-- Note -->
+    <p style="font-size:14px; color:#777; line-height:1.6; margin-top:0;">
+      If you didn’t request this, you can safely ignore this email.
+    </p>
 
-          <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
+    <!-- Footer -->
+    <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
+    <p style="font-size:13px; color:#999; text-align:center; margin:0;">
+      &copy; ${new Date().getFullYear()} HL. All rights reserved.
+    </p>
+  </div>
+</div>
 
-          <p style="font-size:13px; color:#999; text-align:center;">
-            &copy; ${new Date().getFullYear()} HL. All rights reserved.
-          </p>
-        </div>
-      </div>
     `,
   text: `Welcome to HL! Please verify your email: ${verificationToken}`,
 };
@@ -248,37 +301,42 @@ const sendVerificationEmailForget = async (email, verificationToken) => {
     to: email,
     subject: "Verify your email",
     html: `
-       <div style="font-family: Arial, sans-serif; background-color:#f4f4f4; padding:30px;">
-        <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.1); padding:20px;">
-          
-          <div style="text-align:center; margin-bottom:20px;">
-            <h1 style="color:#4CAF50; margin:0;">HL</h1>
-            <p style="color:#555; font-size:16px; margin-top:5px;">Secure Email Verification</p>
-          </div>
+  <div style="font-family: Arial, sans-serif; background-color:#f4f4f4; padding:30px;">
+  <div style="max-width:600px; margin:auto; background:#ffffff; border-radius:10px; box-shadow:0 4px 12px rgba(0,0,0,0.1); padding:25px;">
+    
+    <!-- Header -->
+    <div style="text-align:center; margin-bottom:25px;">
+      <h1 style="color:#4199c7; margin:0; font-size:32px; font-weight:700;">HL</h1>
+      <p style="color:#555; font-size:16px; margin-top:6px; font-weight:500;">Secure Email Verification</p>
+    </div>
 
-          <p style="font-size:16px; color:#333;">Hello,</p>
-          <p style="font-size:15px; color:#555; line-height:1.6;">
-            We received a request to verify your email address. Please use the following
-            <strong style="color:#4CAF50;">verification code</strong>:
-          </p>
+    <!-- Greeting -->
+    <p style="font-size:16px; color:#333; margin-bottom:10px;">Hello,</p>
+    <p style="font-size:15px; color:#555; line-height:1.7; margin-top:0;">
+      We received a request to verify your email address. Please use the following
+      <strong style="color:#4199c7;">verification code</strong>:
+    </p>
 
-          <div style="text-align:center; margin:30px 0;">
-            <span style="display:inline-block; background:#4CAF50; color:#fff; font-size:24px; font-weight:bold; letter-spacing:3px; padding:15px 25px; border-radius:8px;">
-              ${verificationToken}
-            </span>
-          </div>
+    <!-- Verification Code -->
+    <div style="text-align:center; margin:35px 0;">
+      <span style="display:inline-block; background:#4199c7; color:#ffffff; font-size:24px; font-weight:bold; letter-spacing:3px; padding:15px 35px; border-radius:8px;">
+        ${verificationToken}
+      </span>
+    </div>
 
-          <p style="font-size:14px; color:#777; line-height:1.5;">
-            If you didn’t request this, you can safely ignore this email.
-          </p>
+    <!-- Note -->
+    <p style="font-size:14px; color:#777; line-height:1.6; margin-top:0;">
+      If you didn’t request this, you can safely ignore this email.
+    </p>
 
-          <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
+    <!-- Footer -->
+    <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
+    <p style="font-size:13px; color:#999; text-align:center; margin:0;">
+      &copy; ${new Date().getFullYear()} HL. All rights reserved.
+    </p>
+  </div>
+</div>
 
-          <p style="font-size:13px; color:#999; text-align:center;">
-            &copy; ${new Date().getFullYear()} HL. All rights reserved.
-          </p>
-        </div>
-      </div>
     `,
     text: `Your verification code is: ${verificationToken}`,
   };
