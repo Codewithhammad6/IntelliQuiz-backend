@@ -13,12 +13,10 @@
 
 
 
-
-
 import { app } from "./index.js";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-// ❌ No app.listen on Vercel
+// Vercel serverless functions ke liye
 export default app;
