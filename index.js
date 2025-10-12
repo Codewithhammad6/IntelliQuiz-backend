@@ -17,7 +17,6 @@ const allowedOrigins = [
   "http://localhost:5000",
   "http://10.0.2.2:19000",
   "http://192.168.100.12:19000",
-  "https://hl-mart-production.up.railway.app",
 ];
 
 app.use(
@@ -43,6 +42,24 @@ removeUnverifiedAccounts()
 connectDB();
 
 
+
+// ✅ ADD THIS ROOT ROUTE
+app.get("/", (req, res) => {
+  res.json({ 
+    success: true,
+    message: "IntelliQuiz Backend API is working!",
+    timestamp: new Date().toISOString(),
+    version: "1.0.0"
+  });
+});
+
+// ✅ ADD HEALTH CHECK ROUTE
+app.get("/health", (req, res) => {
+  res.status(200).json({ 
+    status: "OK", 
+    database: "Connected" 
+  });
+});
 
 
 
