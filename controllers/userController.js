@@ -2,56 +2,19 @@ import { catchAsyncError } from "../middleware/catchAsyncError.js";
 import ErrorHandler from "../middleware/error.js";
 import User from "../models/userModel.js";
 import nodemailer from "nodemailer";
-import crypto from "crypto";
 import dotenv from "dotenv";
 dotenv.config();
 import { sendToken } from "../utils/sendToken.js";
-import Order from '../models/orderModel.js'
-import mongoose from "mongoose";
+
 
 
 // REGISTER
 export const register = catchAsyncError(async (req, res, next) => {
-  // const { name, email, password } = req.body;
+ 
 
-  // if (!name || !email || !password) {
-  //   return next(new ErrorHandler("All fields required", 400));
-  // }
+const { name, rollNumber, role, email, password } = req.body;
 
-  // // Email format check
-  // const emailRegex = /^\S+@\S+\.\S+$/;
-  // if (!emailRegex.test(email)) {
-  //   return next(new ErrorHandler("Invalid email format", 400));
-  // }
-
-  // const existingUser = await User.findOne({ email, verified: true });
-
-  // if (existingUser) {
-  //   return next(new ErrorHandler("Email is already used.", 400));
-  // }
-
-  // const newUser = new User({ name, email, password });
-
-  // // generate and store token
-  // const verificationToken = newUser.generateCode();
-  // newUser.verificationToken = verificationToken;
-
-  // await newUser.save();
-
-  // // send verification email
-  // await sendVerificationEmail(newUser.email, verificationToken);
-
-  // res.status(201).json({
-  //   success: true,
-  //   message:
-  //     "User registered successfully. Please check your email for verification.",
-  // });
-// inside register controller
-
-
-const { name, email, password } = req.body;
-
-if (!name || !email || !password) {
+if (!name || !role || !email || !password) {
   return next(new ErrorHandler("All fields required", 400));
 }
 
@@ -72,6 +35,8 @@ if (existingUser && existingUser.verified) {
 if (existingUser && !existingUser.verified) {
   existingUser.name = name;
   existingUser.password = password; // will be hashed by pre-save
+  existingUser.rollNumber = rollNumber;
+  existingUser.role = role;
   const verificationToken = existingUser.generateCode();
   await existingUser.save();
 
@@ -84,7 +49,7 @@ if (existingUser && !existingUser.verified) {
 }
 
 // 4️⃣ Otherwise, create new user
-const newUser = new User({ name, email, password });
+const newUser = new User({ name, rollNumber, role, email, password });
 const verificationToken = newUser.generateCode();
 await newUser.save();
 await sendVerificationEmail(newUser.email, verificationToken);
@@ -110,7 +75,7 @@ const sendVerificationEmail = async (email, verificationToken) => {
   });
 
 const mailOptions = {
-  from: process.env.MAIL_FROM || `"HL" <${process.env.SMTP_USER}>`,
+  from: process.env.MAIL_FROM || `"IntelliQuiz" <${process.env.SMTP_USER}>`,
   to: email,
   subject: "✨ Verify your email address",
  html: `
@@ -119,7 +84,7 @@ const mailOptions = {
     
     <!-- Header -->
     <div style="text-align:center; margin-bottom:25px;">
-      <h1 style="color:#4199c7; margin:0; font-size:32px; font-weight:700;">HL</h1>
+      <h1 style="color:#4199c7; margin:0; font-size:32px; font-weight:700;">IntelliQuiz</h1>
       <p style="color:#555; font-size:16px; margin-top:6px; font-weight:500;">Secure Email Verification</p>
     </div>
 
@@ -145,7 +110,7 @@ const mailOptions = {
     <!-- Footer -->
     <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
     <p style="font-size:13px; color:#999; text-align:center; margin:0;">
-      &copy; ${new Date().getFullYear()} HL. All rights reserved.
+      &copy; ${new Date().getFullYear()} IntelliQuiz. All rights reserved.
     </p>
   </div>
 </div>
@@ -297,7 +262,7 @@ const sendVerificationEmailForget = async (email, verificationToken) => {
 
 
   const mailOptions = {
-    from: process.env.MAIL_FROM || `"HL" <${process.env.SMTP_USER}>`,
+    from: process.env.MAIL_FROM || `"IntelliQuiz" <${process.env.SMTP_USER}>`,
     to: email,
     subject: "Verify your email",
     html: `
@@ -306,7 +271,7 @@ const sendVerificationEmailForget = async (email, verificationToken) => {
     
     <!-- Header -->
     <div style="text-align:center; margin-bottom:25px;">
-      <h1 style="color:#4199c7; margin:0; font-size:32px; font-weight:700;">HL</h1>
+      <h1 style="color:#4199c7; margin:0; font-size:32px; font-weight:700;">IntelliQuiz</h1>
       <p style="color:#555; font-size:16px; margin-top:6px; font-weight:500;">Secure Email Verification</p>
     </div>
 
@@ -332,7 +297,7 @@ const sendVerificationEmailForget = async (email, verificationToken) => {
     <!-- Footer -->
     <hr style="margin:25px 0; border:none; border-top:1px solid #eee;">
     <p style="font-size:13px; color:#999; text-align:center; margin:0;">
-      &copy; ${new Date().getFullYear()} HL. All rights reserved.
+      &copy; ${new Date().getFullYear()} IntelliQuiz. All rights reserved.
     </p>
   </div>
 </div>
@@ -387,101 +352,89 @@ const user = await User.findOne({ verificationToken: code })
 
 
 
-export const addresses = catchAsyncError(async (req, res, next) => {
-  const user = req.user;
-  const { address } = req.body;
 
-  // Find user
-  const currentUser = await User.findById(user._id);
-  if (!currentUser) {
-    return next(new ErrorHandler("User not found", 404));
+// In your backend route
+export const quizResult = catchAsyncError(async (req, res, next) => {
+  const { quizName, obtainedMarks, totalMarks, status, quizCode, className, subject } = req.body;
+  const userId = req.user._id;
+
+  console.log('Received quiz result data:', {
+    userId, quizName, obtainedMarks, totalMarks, status ,quizCode, className, subject
+  });
+
+  if (!userId || !quizName || obtainedMarks === undefined || !totalMarks || !status || !quizCode || !className || !subject) {
+    return next(new ErrorHandler("All fields required: userId, quizName, obtainedMarks, totalMarks, status", 400));
   }
 
-  currentUser.addresses.push(address);
+  try {
+    // Find user by ID
+    const user = await User.findById(userId);
+    if (!user) {
+      return next(new ErrorHandler("User not found", 404));
+    }
 
-  await currentUser.save();
+    // Check if user has already attempted this quiz
+    const existingQuiz = user.quizzes.find(quiz => quiz.quizName === quizName && quiz.quizCode === quizCode && quiz.className === className && quiz.subject === subject);
+    if (existingQuiz) {
+      return next(new ErrorHandler("You have already attempted this quiz", 400));
+    }
 
-  res.status(200).json({
-    success: true,
-    message: "Address added successfully",
-    addresses: currentUser.addresses,
-  });
-});
+    // Create new quiz result
+    const newQuizResult = {
+      quizCode,
+      className,
+      subject,
+      quizName,
+      obtainedMarks,
+      totalMarks,
+      status,
+      attemptedAt: new Date()
+    };
 
-export const getAddresses = catchAsyncError(async (req, res, next) => {
-  const user = req.user;
+    // Add to user's quizzes array
+    user.quizzes.push(newQuizResult);
+    await user.save();
 
-  // Find user
-  const currentUser = await User.findById(user._id);
-  if (!currentUser) {
-    return next(new ErrorHandler("User not found", 404));
+    console.log('Quiz result saved for user:', userId);
+
+    res.status(200).json({
+      success: true,
+      message: "Quiz result saved successfully",
+      quizResult: newQuizResult
+    });
+  } catch (error) {
+    console.error('Error saving quiz result:', error);
+    return next(new ErrorHandler("Internal server error", 500));
   }
-
-  res.status(200).json({
-    success: true,
-    message: "Addresses fetched successfully",
-    addresses: currentUser.addresses,
-  });
 });
 
-// Delete specific address
-export const deleteAddress = catchAsyncError(async (req, res, next) => {
-  const userId = req.user; 
-  const { id } = req.params;
 
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { $pull: { addresses: { _id: new mongoose.Types.ObjectId(id) } } },
-    { new: true }
-  ).select("addresses"); 
+export const updateProfile = catchAsyncError(async (req, res, next) => {
+  const userId = req.user._id;
+  const { name, rollNumber } = req.body;
 
+  // Find user by ID
+  const user = await User.findById(userId);
   if (!user) {
     return next(new ErrorHandler("User not found", 404));
   }
 
-  res.status(200).json({
-    success: true,
-    message: "Address deleted successfully",
-    addresses: user.addresses, 
-  });
-});
+  // Update user fields
+  user.name = name || user.name;
+  user.rollNumber = rollNumber || user.rollNumber;
 
-
-//Get all users
-
-export const users = catchAsyncError(async (req, res, next) => {
-  const users = await User.find({ _id: { $ne: req.user._id } }).populate("orders").populate("products").exec();;
-  if (!users) {
-    return next(new ErrorHandler("Users Not Found", 404));
-  }
+  await user.save();
 
   res.status(200).json({
     success: true,
-    users,
+    message: "Profile updated successfully",
+    user
   });
 });
+// 
 
 
-
-
-
-// deleteUser With Orders
-export const deleteUserWithOrders = catchAsyncError(async (req, res, next) => {
-  const { id } = req.params;
-
-  const user = await User.findById(id);
-  if (!user) return next(new ErrorHandler("User not found", 404));
-
-  // delete all orders of this user
-  await Order.deleteMany({ user: id });
-
-  // delete the user
-  await user.deleteOne();
-
-  res.status(200).json({
-    success: true,
-    message: "User and all orders deleted successfully",
-  });
+export const getAllUsers = catchAsyncError(async (req, res, next) => {
+  const users = await User.find().select("-password -verificationToken");
+  res.status(200).json({ users });
 });
-
-

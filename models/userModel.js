@@ -17,6 +17,14 @@ const userSchema = new mongoose.Schema({
       message: 'Please provide a valid email address'
     }
   },
+  rollNumber: {
+    type: String,
+  },
+  role: {
+    type: String,
+    required: [true, 'Role is required'],
+    enum: ['student', 'teacher'],
+  },
   password: {
     type: String,
     required: [true, 'Password is required'],
@@ -24,35 +32,47 @@ const userSchema = new mongoose.Schema({
     minlength: [6, 'Password must be at least 6 characters'],
     maxlength: [32, 'Password cannot exceed 32 characters']
   },
+   
   verified: {
     type: Boolean,
     default: false,
   },
   verificationToken: String,
-  addresses: [
+ quizzes: [
     {
-      name: String,
-      mobileNo: String,
-      houseNo: String,
-      street: String,
-      landmark: String,
-      city: String,
-      country: String,
-      postalCode: String,
+      quizName: {
+        type: String,
+        required: true,
+
+      },
+      obtainedMarks: {
+        type: Number,
+        required: true
+      },
+      totalMarks: {
+        type: Number,
+        required: true
+      },
+      attemptedAt: {
+        type: Date,
+        default: Date.now
+      },
+      status: {
+        type: String,
+        required: true
+      },
+      quizCode:{
+    type: String,
+   },
+      className:{
+    type: String,
+      },
+      subject:{
+    type: String,
+      },
     },
   ],
-  orders: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Order",
-    },
-  ],
-  products: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Product",
-    },
-  ],
+  
   createdAt: {
     type: Date,
     default: Date.now,

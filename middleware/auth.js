@@ -7,7 +7,7 @@ export const isAuthenticated = catchAsyncError(async (req, res, next) => {
   const { token } = req.cookies;
 
 
-  
+
 
 
   // Or try from Authorization header (Bearer token)

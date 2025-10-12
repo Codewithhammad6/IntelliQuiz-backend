@@ -1,5 +1,5 @@
 import express from "express";
-import { addresses, deleteAddress, deleteUserWithOrders, forgot, getAddresses, getUser, login, logout, NewPassword, register, users, verifyEmail, verifyForgot } from "../controllers/userController.js";
+import {forgot, getAllUsers, getUser, login, logout, NewPassword, quizResult, register, updateProfile, verifyEmail, verifyForgot } from "../controllers/userController.js";
 import { isAuthenticated } from "../middleware/auth.js";
 const router = express.Router();
 
@@ -10,12 +10,9 @@ router.post("/forgot",forgot)
 router.post("/verify",verifyForgot)
 router.post("/newpassword",NewPassword)
 router.get("/me",isAuthenticated, getUser);
+router.put("/update",isAuthenticated, updateProfile);
 router.get("/logout",isAuthenticated, logout);
-router.post("/addresses",isAuthenticated, addresses);
-router.get("/getAddresses",isAuthenticated, getAddresses);
-router.get("/getUsers",isAuthenticated, users);
-router.delete("/users/:id", deleteUserWithOrders);
-router.delete("/address/:id",isAuthenticated, deleteAddress);
-
+router.post("/quizResult",isAuthenticated, quizResult);
+router.get("/users", isAuthenticated, getAllUsers);
 
 export default router;
