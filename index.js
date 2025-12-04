@@ -43,7 +43,7 @@ connectDB();
 
 
 
-// ✅ ADD THIS ROOT ROUTE
+// ADD THIS ROOT ROUTE
 app.get("/", (req, res) => {
   res.json({ 
     success: true,
@@ -53,13 +53,6 @@ app.get("/", (req, res) => {
   });
 });
 
-// ✅ ADD HEALTH CHECK ROUTE
-app.get("/health", (req, res) => {
-  res.status(200).json({ 
-    status: "OK", 
-    database: "Connected" 
-  });
-});
 
 
 
